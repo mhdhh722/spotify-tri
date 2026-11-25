@@ -5,40 +5,111 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tri des titres likés</title>
 <style>
-  :root { --bg:#121212; --card:#1e1e1e; --txt:#f2f2f2; --mut:#9a9a9a; --green:#1db954; --red:#e0455a; }
+  :root { --bg:#0e0e10; --card:#1a1a1e; --card2:#232328; --txt:#f4f4f5; --mut:#9a9aa3; --green:#1db954; --red:#e5484d; --line:#2c2c33; }
   * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--txt); font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-  main { max-width: 480px; margin: 0 auto; padding: 20px 16px 60px; }
-  h1 { font-size: 20px; margin: 0 0 16px; }
-  .card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  html, body { margin:0; background:var(--bg); color:var(--txt); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1500px; margin: 0 auto; padding: 22px 28px 48px; min-height: 100vh; }
+  .top { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing:-.01em; }
+  .top-right { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+  .stats { display:flex; gap:16px; font-size:14px; color:var(--mut); }
+  .stats b { color:var(--txt); font-weight:600; }
+  .card { background: var(--card); border-radius: 18px; padding: 24px; margin-bottom: 18px; }
   .muted { color: var(--mut); font-size: 14px; }
-  input, select { width:100%; padding:10px; border-radius:8px; border:1px solid #333; background:#111; color:var(--txt); font-size:15px; }
-  button { cursor:pointer; border:0; border-radius:999px; padding:12px 18px; font-size:16px; font-weight:600; color:#fff; background:#333; }
-  button:disabled { opacity:.4; cursor:default; }
-  .primary { background: var(--green); color:#000; }
-  .keep { background: var(--green); color:#000; }
+  input, select { padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:#111114; color:var(--txt); font-size:15px; }
+  input { width:100%; }
+  button { cursor:pointer; border:0; border-radius:999px; padding:14px 22px; font-size:17px; font-weight:650; color:#fff; background:#2f2f36; transition: filter .12s, transform .05s; }
+  button:hover:not(:disabled) { filter: brightness(1.15); }
+  button:active:not(:disabled) { transform: scale(.98); }
+  button:disabled { opacity:.35; cursor:default; }
+  .primary, .keep { background: var(--green); color:#04140a; }
   .del { background: var(--red); }
-  .row { display:flex; gap:10px; }
-  .row > * { flex:1; }
-  .cover { width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; background:#222; }
-  .title { font-size:20px; font-weight:700; margin:12px 0 2px; }
-  .sub { color:var(--mut); }
-  .badge { display:inline-block; margin-top:8px; font-size:13px; color:var(--mut); }
-  iframe { width:100%; height:80px; border:0; border-radius:12px; margin-top:12px; }
-  .stats { display:flex; justify-content:space-between; font-size:13px; color:var(--mut); margin-bottom:10px; }
-  .hidden { display:none; }
-  .log-item { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid #2a2a2a; font-size:14px; }
-  .log-item button { padding:6px 12px; font-size:13px; }
-  .small { padding:8px 14px; font-size:14px; }
-  .msg { color:#ffb86b; font-size:14px; margin-top:8px; white-space:pre-wrap; }
-  details summary { cursor:pointer; color:var(--mut); }
+  .small { padding:9px 16px; font-size:14px; font-weight:600; }
+  .hidden { display:none !important; }
+  .msg { color:#ffb86b; font-size:14px; margin-top:10px; white-space:pre-wrap; }
+
+  /* Scène principale : 2 colonnes sur ordinateur */
+  .stage { display:grid; grid-template-columns: minmax(300px, 1fr) minmax(360px, 1fr); gap:44px; align-items:center; padding:32px; }
+  .art { display:flex; justify-content:center; }
+  .cover { width:min(100%, calc(100vh - 260px)); min-width:240px; aspect-ratio:1; object-fit:cover; border-radius:14px; background:#222; box-shadow:0 18px 50px rgba(0,0,0,.55); }
+  .title { font-size: clamp(24px, 2.6vw, 38px); font-weight:750; line-height:1.15; letter-spacing:-.02em; margin:0 0 6px; }
+  .artist { font-size: clamp(17px, 1.6vw, 22px); color:var(--txt); opacity:.9; }
+  .album { color:var(--mut); margin-top:4px; }
+  .badge { display:inline-block; margin-top:12px; padding:5px 12px; border-radius:999px; background:var(--card2); color:var(--mut); font-size:13px; }
+
+  /* Lecteur */
+  .playerbox { margin-top:22px; }
+  iframe { width:100%; height:80px; border:0; border-radius:12px; }
+  .sdk { background:var(--card2); border-radius:14px; padding:14px 16px; }
+  .sdk-row { display:flex; align-items:center; gap:14px; }
+  .pp { width:48px; height:48px; padding:0; border-radius:50%; background:#fff; color:#000; font-size:18px; flex:none; }
+  input[type=range] { -webkit-appearance:none; appearance:none; height:5px; border-radius:3px; background:#4a4a52; padding:0; border:0; cursor:pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#fff; }
+  input[type=range]::-moz-range-thumb { width:14px; height:14px; border:0; border-radius:50%; background:#fff; }
+  #seek { flex:1; }
+  .time { font-variant-numeric: tabular-nums; font-size:13px; color:var(--mut); min-width:38px; }
+  .vol-row { display:flex; align-items:center; gap:10px; margin-top:12px; }
+  .vol-row input[type=range] { width:160px; }
+  .icon-btn { padding:4px 8px; background:transparent; font-size:18px; border-radius:8px; }
+  .chk { display:flex; align-items:center; gap:8px; margin-left:auto; font-size:13px; color:var(--mut); cursor:pointer; }
+  .chk input { width:auto; }
+
+  /* Actions */
+  .actions { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:26px; }
+  .actions button { padding:20px 12px; font-size:20px; }
+  .actions2 { display:flex; gap:10px; margin-top:12px; }
+  .hint { margin-top:14px; font-size:12px; color:var(--mut); }
+  kbd { background:var(--card2); border-radius:5px; padding:1px 6px; font-size:12px; border:1px solid var(--line); }
+
+  /* Journal */
+  .log-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap:0 32px; }
+  .log-item { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .log-item a { color:inherit; text-decoration:none; }
+  .log-item a:hover { text-decoration:underline; }
+  .log-item button { padding:6px 12px; font-size:13px; flex:none; }
+  details summary { cursor:pointer; color:var(--txt); font-weight:600; }
+  .logtools { display:flex; gap:10px; margin:14px 0 8px; flex-wrap:wrap; align-items:center; }
+  .logtools input { max-width:320px; }
+  .footer { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:8px; }
+  #login { max-width:520px; margin:8vh auto 0; }
+
+  /* Téléphone et petites fenêtres */
+  @media (max-width: 860px) {
+    main { padding: 14px 14px 100px; }
+    .stage { grid-template-columns: 1fr; gap:18px; padding:18px; }
+    .cover { width:min(100%, 40vh); min-width:0; }
+    .title { font-size:24px; }
+    .actions { position:fixed; left:0; right:0; bottom:0; margin:0; padding:10px 14px calc(10px + env(safe-area-inset-bottom)); background:rgba(14,14,16,.96); backdrop-filter:blur(8px); z-index:5; border-top:1px solid var(--line); }
+    .actions button { padding:16px 8px; font-size:17px; }
+    .hint { display:none; }
+    .vol-row { display:none; }
+    .top { margin-bottom:12px; }
+    .stats { width:100%; justify-content:space-between; }
+    .log-grid { grid-template-columns:1fr; }
+  }
 </style>
 </head>
 <body>
 <main>
-  <h1>Tri des titres likés</h1>
+  <header class="top">
+    <h1>Tri des titres likés</h1>
+    <div id="topRight" class="top-right hidden">
+      <select id="ageFilter">
+        <option value="0">Tous les titres</option>
+        <option value="1">Likés il y a plus de 1 an</option>
+        <option value="2">Likés il y a plus de 2 ans</option>
+        <option value="3">Likés il y a plus de 3 ans</option>
+        <option value="5">Likés il y a plus de 5 ans</option>
+      </select>
+      <div class="stats">
+        <span><b id="nRemaining">0</b> à trier</span>
+        <span><b id="nKept">0</b> gardés</span>
+        <span><b id="nDeleted">0</b> supprimés</span>
+      </div>
+    </div>
+  </header>
 
-  <!-- Écran de connexion -->
+  <!-- Connexion -->
   <section id="login" class="card hidden">
     <p class="muted">Colle ton Client ID Spotify (dashboard développeur). L'URL de redirection à enregistrer dans ton appli Spotify est :</p>
     <input id="redirect" readonly>
@@ -49,69 +120,76 @@
     <div id="loginMsg" class="msg"></div>
   </section>
 
-  <!-- Écran de tri -->
+  <!-- Tri -->
   <section id="app" class="hidden">
+    <div class="card stage">
+      <div class="art"><img id="cover" class="cover" alt=""></div>
+      <div class="side">
+        <div id="track">
+          <div id="tName" class="title"></div>
+          <div id="tArtist" class="artist"></div>
+          <div id="tAlbum" class="album"></div>
+          <div id="tAdded" class="badge"></div>
+
+          <div class="playerbox">
+            <iframe id="embed" allow="encrypted-media; clipboard-write" loading="lazy"></iframe>
+            <div id="sdkPlayer" class="sdk hidden">
+              <div class="sdk-row">
+                <button id="btnPP" class="pp" title="Lecture / pause (espace)">▶</button>
+                <span id="tCur" class="time">0:00</span>
+                <input type="range" id="seek" min="0" max="1000" value="0">
+                <span id="tDur" class="time">0:00</span>
+              </div>
+              <div class="vol-row">
+                <button id="btnMute" class="icon-btn" title="Couper le son">🔊</button>
+                <input type="range" id="vol" min="0" max="100" value="70">
+                <label class="chk"><input type="checkbox" id="chkAuto" checked> Lire automatiquement le titre suivant</label>
+              </div>
+            </div>
+            <div id="fallbackPlay" style="margin-top:10px"><button id="btnPlay" class="small">Lire sur mon appareil Spotify</button></div>
+          </div>
+        </div>
+        <div id="done" class="hidden"><p class="title">Terminé</p><p class="muted">Plus aucun titre à trier avec ce filtre.</p></div>
+
+        <div class="actions">
+          <button id="btnDelete" class="del">Je supprime</button>
+          <button id="btnKeep" class="keep">Je garde</button>
+        </div>
+        <div class="actions2">
+          <button id="btnSkip" class="small">Passer</button>
+          <button id="btnUndo" class="small">Annuler</button>
+        </div>
+        <div class="hint">Raccourcis : <kbd>S</kbd> supprimer · <kbd>K</kbd> garder · <kbd>P</kbd> passer · <kbd>U</kbd> annuler · <kbd>Espace</kbd> lecture</div>
+        <div id="appMsg" class="msg"></div>
+        <div id="syncMsg" class="muted" style="margin-top:8px"></div>
+      </div>
+    </div>
+
     <div class="card">
-      <div class="row" style="margin-bottom:10px">
-        <select id="ageFilter">
-          <option value="0">Tous les titres</option>
-          <option value="1">Likés il y a plus de 1 an</option>
-          <option value="2">Likés il y a plus de 2 ans</option>
-          <option value="3">Likés il y a plus de 3 ans</option>
-          <option value="5">Likés il y a plus de 5 ans</option>
-        </select>
-      </div>
-      <div class="stats">
-        <span id="stRemaining"></span>
-        <span id="stKept"></span>
-        <span id="stDeleted"></span>
-      </div>
-
-      <div id="track">
-        <img id="cover" class="cover" alt="">
-        <div id="tName" class="title"></div>
-        <div id="tArtist" class="sub"></div>
-        <div id="tAlbum" class="sub"></div>
-        <div id="tAdded" class="badge"></div>
-        <iframe id="embed" allow="encrypted-media; clipboard-write" loading="lazy"></iframe>
-        <div style="margin-top:10px"><button id="btnPlay" class="small">Lire sur mon appareil Spotify</button></div>
-      </div>
-      <div id="done" class="hidden"><p>Plus aucun titre à trier avec ce filtre.</p></div>
-    </div>
-
-    <div class="row">
-      <button id="btnDelete" class="del">Je supprime (S)</button>
-      <button id="btnKeep" class="keep">Je garde (K)</button>
-    </div>
-    <div class="row" style="margin-top:10px">
-      <button id="btnSkip" class="small">Passer (P)</button>
-      <button id="btnUndo" class="small">Annuler (U)</button>
-    </div>
-    <div id="appMsg" class="msg"></div>
-    <div id="syncMsg" class="muted" style="margin-top:8px"></div>
-
-    <div class="card" style="margin-top:20px">
       <details>
         <summary>Titres supprimés (<span id="logCount">0</span>)</summary>
-        <p class="muted">Re-liker un titre le remet dans tes titres likés avec la date du jour. Cette liste est sauvegardée en ligne dans ta base privée. Tu peux aussi en exporter une copie CSV.</p>
-        <div class="row" style="margin-bottom:10px">
+        <p class="muted">Cette liste est sauvegardée en ligne dans ta base privée. "Re-liker" remet le titre dans tes titres likés avec la date du jour.</p>
+        <div class="logtools">
+          <input id="logSearch" placeholder="Rechercher dans les supprimés">
           <button id="btnExport" class="small">Exporter en CSV</button>
           <button id="btnImport" class="small">Importer un CSV</button>
+          <input type="file" id="fileImport" accept=".csv,text/csv" class="hidden">
         </div>
-        <input type="file" id="fileImport" accept=".csv,text/csv" class="hidden">
-        <input id="logSearch" placeholder="Rechercher dans les supprimés">
-        <div id="log"></div>
+        <div id="log" class="log-grid"></div>
       </details>
     </div>
-    <p style="text-align:center"><button id="btnLogout" class="small">Se déconnecter</button>
-    <button id="btnResetSeen" class="small">Réinitialiser les "gardés"</button></p>
+    <div class="footer">
+      <button id="btnLogout" class="small">Se déconnecter</button>
+      <button id="btnResetSeen" class="small">Réinitialiser les "gardés"</button>
+    </div>
   </section>
   <section id="loading" class="card hidden"><span id="loadingTxt">Chargement...</span></section>
 </main>
 
 <script>
 const API = 'https://api.spotify.com/v1';
-const SCOPES = 'user-library-read user-library-modify user-modify-playback-state user-read-playback-state';
+const SCOPE_V = 2;
+const SCOPES = 'user-library-read user-library-modify user-modify-playback-state user-read-playback-state streaming user-read-email user-read-private';
 const REDIRECT = location.origin + location.pathname;
 const LS = {
   get(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
@@ -154,6 +232,7 @@ async function handleCallback(){
   if (!code) return false;
   await tokenRequest({ client_id: LS.get('clientId'), grant_type:'authorization_code', code,
     redirect_uri: REDIRECT, code_verifier: LS.get('verifier') });
+  LS.set('scopeV', SCOPE_V);
   history.replaceState({}, '', REDIRECT);
   return true;
 }
@@ -219,16 +298,78 @@ async function syncFromServer(){
     const srv = await syncCall({ action:'list' });
     const srvRemoved = new Set(srv.removed.map(r => r.track_id));
     const srvKept = new Set(srv.kept);
-    // éléments présents seulement en local : on les envoie
     removed.forEach(r => { if (!srvRemoved.has(r.id)) queue.push({ action:'remove', track: r }); });
     [...seen].forEach(id => { if (!srvKept.has(id)) queue.push({ action:'keep', id }); });
-    // éléments présents seulement en ligne : on les récupère
     srv.removed.forEach(r => { if (!removed.some(x => x.id === r.track_id))
       removed.push({ id:r.track_id, uri:r.uri, name:r.name, artists:r.artists, added_at:r.added_at, at:Date.parse(r.removed_at) }); });
     srv.kept.forEach(id => seen.add(id));
     LS.set('removed', removed); LS.set('seen', [...seen]); LS.set('queue', queue);
     flush();
   } catch (e) { setSync('Sauvegarde en ligne indisponible : ' + e.message); }
+}
+
+/* ---------- Lecteur intégré (Web Playback SDK, ordinateur + Premium) ---------- */
+const sdk = { player:null, deviceId:null, ready:false, st:null };
+let userStarted = false, lastShownId = null, dragging = false, preMute = null;
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const fmt = ms => { const s = Math.max(0, Math.floor(ms/1000)); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };
+
+window.onSpotifyWebPlaybackSDKReady = () => {
+  const player = new Spotify.Player({ name:'Tri des likes (navigateur)', getOAuthToken: cb => { getToken().then(cb).catch(() => {}); }, volume: LS.get('vol', 0.7) });
+  sdk.player = player;
+  player.addListener('ready', ({ device_id }) => {
+    sdk.deviceId = device_id; sdk.ready = true;
+    show('sdkPlayer'); show('fallbackPlay', false);
+    $('embed').src = 'about:blank'; show('embed', false);
+  });
+  player.addListener('not_ready', () => { sdk.ready = false; show('sdkPlayer', false); show('fallbackPlay'); show('embed'); render(); });
+  player.addListener('player_state_changed', st => { sdk.st = st ? { pos: st.position, dur: st.duration, paused: st.paused, ts: Date.now() } : null; updatePlayerUi(); });
+  ['initialization_error','authentication_error','account_error'].forEach(ev => player.addListener(ev, e => {
+    sdk.ready = false; show('sdkPlayer', false); show('fallbackPlay'); show('embed'); render();
+  }));
+  player.addListener('playback_error', e => setMsg('Erreur de lecture : ' + (e.message || '')));
+  // Les navigateurs exigent un clic avant de jouer du son
+  document.addEventListener('click', () => { try { player.activateElement(); } catch {} }, { once:true });
+  player.connect();
+};
+function loadSdk(){
+  if (isMobile) return;
+  const s = document.createElement('script'); s.src = 'https://sdk.scdn.co/spotify-player.js'; s.async = true;
+  document.head.appendChild(s);
+}
+async function playTrack(t, retry = 0){
+  if (!sdk.ready || !t) return;
+  try { await api('PUT', '/me/player/play', { query: { device_id: sdk.deviceId }, body: { uris: [t.uri] } }); setMsg(''); }
+  catch (e) {
+    if (retry < 2 && (e.status === 404 || e.status === 502)) { await new Promise(r => setTimeout(r, 1200)); return playTrack(t, retry + 1); }
+    setMsg('Lecture impossible : ' + e.message);
+  }
+}
+function maybeAutoplay(){
+  if (sdk.ready && userStarted && $('chkAuto').checked && current) playTrack(current);
+}
+function updatePlayerUi(){
+  const st = sdk.st;
+  $('btnPP').textContent = (!st || st.paused) ? '▶' : '⏸';
+  if (!st) { $('seek').value = 0; $('tCur').textContent = '0:00'; $('tDur').textContent = '0:00'; return; }
+  $('tDur').textContent = fmt(st.dur);
+}
+setInterval(() => {
+  const st = sdk.st; if (!st || dragging) return;
+  const pos = st.paused ? st.pos : Math.min(st.dur, st.pos + (Date.now() - st.ts));
+  $('seek').value = st.dur ? Math.round(pos / st.dur * 1000) : 0;
+  $('tCur').textContent = fmt(pos);
+}, 400);
+function togglePlay(){
+  if (!sdk.ready) return;
+  userStarted = true;
+  if (!sdk.st) playTrack(current); else sdk.player.togglePlay();
+}
+function setVolume(v){
+  const val = Math.max(0, Math.min(1, v));
+  if (sdk.player) sdk.player.setVolume(val);
+  LS.set('vol', val); $('vol').value = Math.round(val * 100);
+  $('btnMute').textContent = val === 0 ? '🔇' : (val < 0.5 ? '🔈' : '🔊');
 }
 
 /* ---------- Données ---------- */
@@ -277,9 +418,9 @@ function ageLabel(iso){
 }
 function render(){
   const p = pool();
-  $('stRemaining').textContent = `${p.length} à trier`;
-  $('stKept').textContent = `${seen.size} gardés`;
-  $('stDeleted').textContent = `${removed.length} supprimés`;
+  $('nRemaining').textContent = p.length;
+  $('nKept').textContent = seen.size;
+  $('nDeleted').textContent = removed.length;
   show('track', !!current); show('done', !current);
   ['btnKeep','btnDelete','btnSkip'].forEach(id => $(id).disabled = !current);
   $('btnUndo').disabled = !history_.length;
@@ -289,8 +430,13 @@ function render(){
     $('tArtist').textContent = current.artists;
     $('tAlbum').textContent = current.album;
     $('tAdded').textContent = ageLabel(current.added_at);
-    $('embed').src = 'https://open.spotify.com/embed/track/' + current.id;
-  } else { $('embed').src = 'about:blank'; }
+    if (!sdk.ready) $('embed').src = 'https://open.spotify.com/embed/track/' + current.id;
+    if (current.id !== lastShownId) { lastShownId = current.id; maybeAutoplay(); }
+  } else {
+    $('embed').src = 'about:blank';
+    if (sdk.ready && sdk.st && !sdk.st.paused) sdk.player.pause();
+    lastShownId = null;
+  }
   renderLog();
 }
 function renderLog(){
@@ -301,7 +447,7 @@ function renderLog(){
     const d = document.createElement('div'); d.className = 'log-item';
     const s = document.createElement('span');
     const a = document.createElement('a'); a.href = 'https://open.spotify.com/track/' + r.id; a.target = '_blank'; a.rel = 'noopener';
-    a.style.color = 'inherit'; a.textContent = `${r.name} · ${r.artists}`;
+    a.textContent = `${r.name} · ${r.artists}`;
     s.append(a);
     if (r.at) { const dt = document.createElement('div'); dt.className = 'muted'; dt.textContent = 'Supprimé le ' + new Date(r.at).toLocaleDateString('fr-FR'); s.append(dt); }
     const b = document.createElement('button'); b.textContent = 'Re-liker';
@@ -346,7 +492,6 @@ function setMsg(m){ $('appMsg').textContent = m || ''; }
 
 /* ---------- Actions ---------- */
 async function libraryCall(method, uri){
-  // Format actuel : paramètre de requête "uris". Repli sur le corps JSON si refusé.
   try { return await api(method, '/me/library', { query: { uris: uri } }); }
   catch (e) { if (e.status === 400) return await api(method, '/me/library', { body: { uris: [uri] } }); throw e; }
 }
@@ -393,13 +538,21 @@ async function playHere(){
 }
 
 /* ---------- Démarrage ---------- */
-function logout(){ ['tok','verifier'].forEach(LS.del); location.reload(); }
+function logout(){ ['tok','verifier','scopeV'].forEach(LS.del); location.reload(); }
 async function init(){
   $('redirect').value = REDIRECT;
   $('clientId').value = LS.get('clientId', '');
   $('btnLogin').onclick = startLogin;
   $('btnKeep').onclick = keep; $('btnDelete').onclick = del; $('btnSkip').onclick = skip;
   $('btnUndo').onclick = undo; $('btnPlay').onclick = playHere; $('btnLogout').onclick = logout;
+  $('btnPP').onclick = togglePlay;
+  $('btnMute').onclick = () => { const v = LS.get('vol', 0.7); if (v > 0) { preMute = v; setVolume(0); } else setVolume(preMute || 0.7); };
+  $('vol').oninput = e => setVolume(e.target.value / 100);
+  $('seek').oninput = () => { dragging = true; const st = sdk.st; if (st) $('tCur').textContent = fmt($('seek').value / 1000 * st.dur); };
+  $('seek').onchange = () => { const st = sdk.st; if (st && sdk.player) sdk.player.seek(Math.round($('seek').value / 1000 * st.dur)); dragging = false; };
+  $('chkAuto').checked = LS.get('autoplay', true);
+  $('chkAuto').onchange = e => LS.set('autoplay', e.target.checked);
+  setVolume(LS.get('vol', 0.7));
   $('btnResetSeen').onclick = () => { if (confirm('Remettre tous les titres gardés dans le tirage ?')) { seen.clear(); LS.set('seen', []); enqueue({ action:'clear_kept' }); pickNext(); } };
   $('ageFilter').onchange = pickNext;
   $('btnExport').onclick = exportCsv;
@@ -407,18 +560,27 @@ async function init(){
   $('fileImport').onchange = e => { if (e.target.files[0]) importCsv(e.target.files[0]); e.target.value = ''; };
   $('logSearch').oninput = renderLog;
   document.addEventListener('keydown', e => {
-    if (!$('app') || $('app').classList.contains('hidden') || ['SELECT','INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+    if ($('app').classList.contains('hidden')) return;
+    if (['SELECT','INPUT','TEXTAREA'].includes(e.target.tagName)) return;
     const k = e.key.toLowerCase();
     if (k === 'k') keep(); else if (k === 's') del(); else if (k === 'p') skip(); else if (k === 'u') undo();
+    else if (e.key === ' ' && sdk.ready && e.target.tagName !== 'BUTTON') { e.preventDefault(); togglePlay(); }
   });
 
   try {
     await handleCallback();
+    if (LS.get('tok') && LS.get('scopeV') !== SCOPE_V) {
+      LS.del('tok');
+      show('login');
+      $('loginMsg').textContent = 'Nouvelle autorisation nécessaire (lecteur intégré et volume). Clique sur "Se connecter".';
+      return;
+    }
     if (!LS.get('tok')) { show('login'); return; }
     show('loading');
     await loadAllTracks();
     await syncFromServer();
-    show('loading', false); show('app');
+    show('loading', false); show('app'); show('topRight');
+    loadSdk();
     pickNext();
   } catch (e) {
     show('loading', false); show('login');
