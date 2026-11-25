@@ -92,7 +92,13 @@
     <div class="card" style="margin-top:20px">
       <details>
         <summary>Titres supprimés (<span id="logCount">0</span>)</summary>
-        <p class="muted">Re-liker un titre le remet dans tes titres likés avec la date du jour.</p>
+        <p class="muted">Re-liker un titre le remet dans tes titres likés avec la date du jour. Cette liste est stockée dans ce navigateur : exporte-la pour en garder une copie.</p>
+        <div class="row" style="margin-bottom:10px">
+          <button id="btnExport" class="small">Exporter en CSV</button>
+          <button id="btnImport" class="small">Importer un CSV</button>
+        </div>
+        <input type="file" id="fileImport" accept=".csv,text/csv" class="hidden">
+        <input id="logSearch" placeholder="Rechercher dans les supprimés">
         <div id="log"></div>
       </details>
     </div>
@@ -244,13 +250,50 @@ function render(){
 function renderLog(){
   $('logCount').textContent = removed.length;
   const box = $('log'); box.innerHTML = '';
-  removed.slice().reverse().slice(0, 200).forEach(r => {
+  const q = ($('logSearch').value || '').toLowerCase().trim();
+  removed.slice().reverse().filter(r => !q || `${r.name} ${r.artists}`.toLowerCase().includes(q)).slice(0, 300).forEach(r => {
     const d = document.createElement('div'); d.className = 'log-item';
-    const s = document.createElement('span'); s.textContent = `${r.name} · ${r.artists}`;
+    const s = document.createElement('span');
+    const a = document.createElement('a'); a.href = 'https://open.spotify.com/track/' + r.id; a.target = '_blank'; a.rel = 'noopener';
+    a.style.color = 'inherit'; a.textContent = `${r.name} · ${r.artists}`;
+    s.append(a);
+    if (r.at) { const dt = document.createElement('div'); dt.className = 'muted'; dt.textContent = 'Supprimé le ' + new Date(r.at).toLocaleDateString('fr-FR'); s.append(dt); }
     const b = document.createElement('button'); b.textContent = 'Re-liker';
     b.onclick = () => relike(r.id);
     d.append(s, b); box.append(d);
   });
+}
+function csvCell(v){ return '"' + String(v ?? '').replace(/"/g, '""') + '"'; }
+function exportCsv(){
+  const head = ['id','uri','titre','artistes','date_like','date_suppression'];
+  const lines = [head.join(',')].concat(removed.map(r => [r.id, r.uri, r.name, r.artists, r.added_at || '', r.at ? new Date(r.at).toISOString() : ''].map(csvCell).join(',')));
+  const blob = new Blob(['﻿' + lines.join('\n')], { type:'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'titres-supprimes-' + new Date().toISOString().slice(0,10) + '.csv'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function parseCsv(text){
+  const rows = []; let row = [], cell = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) { if (c === '"') { if (text[i+1] === '"') { cell += '"'; i++; } else inQ = false; } else cell += c; }
+    else if (c === '"') inQ = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i+1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+async function importCsv(file){
+  const rows = parseCsv((await file.text()).replace(/^﻿/, ''));
+  const known = new Set(removed.map(r => r.id)); let n = 0;
+  rows.slice(1).forEach(c => {
+    if (!c[0] || known.has(c[0])) return;
+    removed.push({ id:c[0], uri:c[1], name:c[2], artists:c[3], added_at:c[4] || null, at: c[5] ? Date.parse(c[5]) : Date.now() });
+    known.add(c[0]); n++;
+  });
+  LS.set('removed', removed); setMsg(`${n} titre(s) importé(s).`); render();
 }
 function setMsg(m){ $('appMsg').textContent = m || ''; }
 
@@ -309,8 +352,12 @@ async function init(){
   $('btnUndo').onclick = undo; $('btnPlay').onclick = playHere; $('btnLogout').onclick = logout;
   $('btnResetSeen').onclick = () => { if (confirm('Remettre tous les titres gardés dans le tirage ?')) { seen.clear(); LS.set('seen', []); pickNext(); } };
   $('ageFilter').onchange = pickNext;
+  $('btnExport').onclick = exportCsv;
+  $('btnImport').onclick = () => $('fileImport').click();
+  $('fileImport').onchange = e => { if (e.target.files[0]) importCsv(e.target.files[0]); e.target.value = ''; };
+  $('logSearch').oninput = renderLog;
   document.addEventListener('keydown', e => {
-    if (!$('app') || $('app').classList.contains('hidden') || e.target.tagName === 'SELECT') return;
+    if (!$('app') || $('app').classList.contains('hidden') || ['SELECT','INPUT','TEXTAREA'].includes(e.target.tagName)) return;
     const k = e.key.toLowerCase();
     if (k === 'k') keep(); else if (k === 's') del(); else if (k === 'p') skip(); else if (k === 'u') undo();
   });
