@@ -159,7 +159,7 @@
           <button id="btnSkip" class="small">Passer</button>
           <button id="btnUndo" class="small">Annuler</button>
         </div>
-        <div class="hint">Raccourcis : <kbd>S</kbd> supprimer · <kbd>K</kbd> garder · <kbd>P</kbd> passer · <kbd>U</kbd> annuler · <kbd>Espace</kbd> lecture</div>
+        <div class="hint">Raccourcis : <kbd>S</kbd> supprimer · <kbd>K</kbd> garder · <kbd>P</kbd> passer · <kbd>U</kbd> annuler</div>
         <div id="appMsg" class="msg"></div>
         <div id="syncMsg" class="muted" style="margin-top:8px"></div>
       </div>
@@ -332,8 +332,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   document.addEventListener('click', () => { try { player.activateElement(); } catch {} }, { once:true });
   player.connect();
 };
+const USE_SDK = false; // lecteur intégré désactivé : on utilise le lecteur officiel Spotify (iframe)
 function loadSdk(){
-  if (isMobile) return;
+  if (isMobile || !USE_SDK) return;
   const s = document.createElement('script'); s.src = 'https://sdk.scdn.co/spotify-player.js'; s.async = true;
   document.head.appendChild(s);
 }
