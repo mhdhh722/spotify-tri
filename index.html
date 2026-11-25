@@ -88,11 +88,12 @@
       <button id="btnUndo" class="small">Annuler (U)</button>
     </div>
     <div id="appMsg" class="msg"></div>
+    <div id="syncMsg" class="muted" style="margin-top:8px"></div>
 
     <div class="card" style="margin-top:20px">
       <details>
         <summary>Titres supprimés (<span id="logCount">0</span>)</summary>
-        <p class="muted">Re-liker un titre le remet dans tes titres likés avec la date du jour. Cette liste est stockée dans ce navigateur : exporte-la pour en garder une copie.</p>
+        <p class="muted">Re-liker un titre le remet dans tes titres likés avec la date du jour. Cette liste est sauvegardée en ligne dans ta base privée. Tu peux aussi en exporter une copie CSV.</p>
         <div class="row" style="margin-bottom:10px">
           <button id="btnExport" class="small">Exporter en CSV</button>
           <button id="btnImport" class="small">Importer un CSV</button>
@@ -183,6 +184,51 @@ async function api(method, path, { query, body } = {}, retry = 0){
   if (r.status === 204) return null;
   const txt = await r.text();
   return txt ? JSON.parse(txt) : null;
+}
+
+/* ---------- Synchro privée (Supabase, vérifiée par ton jeton Spotify) ---------- */
+const SYNC_URL = 'https://mzcigllddekrdqfpbixh.supabase.co/functions/v1/spotify-tri';
+let queue = LS.get('queue', []);
+let flushing = false;
+function setSync(m){ const el = $('syncMsg'); if (el) el.textContent = m; }
+async function syncCall(payload){
+  const r = await fetch(SYNC_URL, { method:'POST',
+    headers: { 'Content-Type':'application/json', 'x-spotify-token': await getToken() },
+    body: JSON.stringify(payload) });
+  let j = null; try { j = await r.json(); } catch {}
+  if (!r.ok) throw new Error((j && j.error) || ('HTTP ' + r.status));
+  return j;
+}
+function enqueue(op){ queue.push(op); LS.set('queue', queue); flush(); }
+async function flush(){
+  if (flushing) return; flushing = true;
+  try {
+    while (queue.length) {
+      try { await syncCall(queue[0]); }
+      catch (e) { if (['forbidden','bad track','bad id','unknown action'].includes(e.message)) { /* op inutilisable, on l'abandonne */ } else throw e; }
+      queue.shift(); LS.set('queue', queue);
+    }
+    setSync('Sauvegarde en ligne à jour');
+  } catch (e) { setSync('Sauvegarde en attente (' + e.message + '), nouvel essai à la prochaine action'); }
+  finally { flushing = false; }
+}
+async function syncFromServer(){
+  try {
+    await flush();
+    if (queue.length) return;
+    const srv = await syncCall({ action:'list' });
+    const srvRemoved = new Set(srv.removed.map(r => r.track_id));
+    const srvKept = new Set(srv.kept);
+    // éléments présents seulement en local : on les envoie
+    removed.forEach(r => { if (!srvRemoved.has(r.id)) queue.push({ action:'remove', track: r }); });
+    [...seen].forEach(id => { if (!srvKept.has(id)) queue.push({ action:'keep', id }); });
+    // éléments présents seulement en ligne : on les récupère
+    srv.removed.forEach(r => { if (!removed.some(x => x.id === r.track_id))
+      removed.push({ id:r.track_id, uri:r.uri, name:r.name, artists:r.artists, added_at:r.added_at, at:Date.parse(r.removed_at) }); });
+    srv.kept.forEach(id => seen.add(id));
+    LS.set('removed', removed); LS.set('seen', [...seen]); LS.set('queue', queue);
+    flush();
+  } catch (e) { setSync('Sauvegarde en ligne indisponible : ' + e.message); }
 }
 
 /* ---------- Données ---------- */
@@ -290,10 +336,11 @@ async function importCsv(file){
   const known = new Set(removed.map(r => r.id)); let n = 0;
   rows.slice(1).forEach(c => {
     if (!c[0] || known.has(c[0])) return;
-    removed.push({ id:c[0], uri:c[1], name:c[2], artists:c[3], added_at:c[4] || null, at: c[5] ? Date.parse(c[5]) : Date.now() });
+    const item = { id:c[0], uri:c[1], name:c[2], artists:c[3], added_at:c[4] || null, at: c[5] ? Date.parse(c[5]) : Date.now() };
+    removed.push(item); queue.push({ action:'remove', track: item });
     known.add(c[0]); n++;
   });
-  LS.set('removed', removed); setMsg(`${n} titre(s) importé(s).`); render();
+  LS.set('removed', removed); LS.set('queue', queue); flush(); setMsg(`${n} titre(s) importé(s).`); render();
 }
 function setMsg(m){ $('appMsg').textContent = m || ''; }
 
@@ -306,6 +353,7 @@ async function libraryCall(method, uri){
 function keep(){
   if (!current) return;
   seen.add(current.id); LS.set('seen', [...seen]);
+  enqueue({ action:'keep', id: current.id });
   history_.push({ type:'keep', track: current });
   setMsg(''); pickNext();
 }
@@ -318,6 +366,7 @@ async function del(){
   tracks = tracks.filter(x => x.id !== t.id);
   removed.push({ id:t.id, uri:t.uri, name:t.name, artists:t.artists, added_at:t.added_at, at: Date.now() });
   LS.set('removed', removed);
+  enqueue({ action:'remove', track: { id:t.id, uri:t.uri, name:t.name, artists:t.artists, album:t.album, added_at:t.added_at } });
   history_.push({ type:'delete', track: t });
   setMsg(''); pickNext();
 }
@@ -326,6 +375,7 @@ async function relike(id){
   const r = removed.find(x => x.id === id); if (!r) return;
   try { await libraryCall('PUT', r.uri); } catch (e) { setMsg('Échec : ' + e.message); return; }
   removed = removed.filter(x => x.id !== id); LS.set('removed', removed);
+  enqueue({ action:'restore', id });
   const prev = history_.find(h => h.type==='delete' && h.track.id===id);
   tracks.push(prev ? prev.track : { id:r.id, uri:r.uri, name:r.name, artists:r.artists, album:'', image:'', added_at:new Date().toISOString() });
   history_ = history_.filter(h => !(h.type==='delete' && h.track.id===id));
@@ -333,7 +383,7 @@ async function relike(id){
 }
 async function undo(){
   const h = history_.pop(); if (!h) return;
-  if (h.type === 'keep') { seen.delete(h.track.id); LS.set('seen', [...seen]); current = h.track; render(); }
+  if (h.type === 'keep') { seen.delete(h.track.id); LS.set('seen', [...seen]); enqueue({ action:'unkeep', id: h.track.id }); current = h.track; render(); }
   else { history_.push(h); await relike(h.track.id); history_ = history_.filter(x => x !== h); current = h.track; render(); }
 }
 async function playHere(){
@@ -350,7 +400,7 @@ async function init(){
   $('btnLogin').onclick = startLogin;
   $('btnKeep').onclick = keep; $('btnDelete').onclick = del; $('btnSkip').onclick = skip;
   $('btnUndo').onclick = undo; $('btnPlay').onclick = playHere; $('btnLogout').onclick = logout;
-  $('btnResetSeen').onclick = () => { if (confirm('Remettre tous les titres gardés dans le tirage ?')) { seen.clear(); LS.set('seen', []); pickNext(); } };
+  $('btnResetSeen').onclick = () => { if (confirm('Remettre tous les titres gardés dans le tirage ?')) { seen.clear(); LS.set('seen', []); enqueue({ action:'clear_kept' }); pickNext(); } };
   $('ageFilter').onchange = pickNext;
   $('btnExport').onclick = exportCsv;
   $('btnImport').onclick = () => $('fileImport').click();
@@ -367,6 +417,7 @@ async function init(){
     if (!LS.get('tok')) { show('login'); return; }
     show('loading');
     await loadAllTracks();
+    await syncFromServer();
     show('loading', false); show('app');
     pickNext();
   } catch (e) {
